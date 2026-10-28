@@ -15,6 +15,27 @@
         }
         h2 { margin-bottom: 15px; }
         
+        /* 導覽連結區塊 */
+        .nav-container {
+            margin-bottom: 18px;
+        }
+        .nav-link-btn {
+            display: inline-block;
+            padding: 8px 18px;
+            background-color: #495057;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            transition: all 0.2s ease;
+        }
+        .nav-link-btn:hover {
+            background-color: #343a40;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
         /* 借用 / 歸還 切換按鈕樣式 */
         .mode-container { 
             margin-bottom: 15px; 
@@ -82,6 +103,11 @@
 <body>
     <h2>📷 設備掃描借還系統</h2>
     
+    <!-- 前往清單頁面按鈕 -->
+    <div class="nav-container">
+        <a href="borrowed_list.html" class="nav-link-btn">📋 查看已借出設備清單</a>
+    </div>
+
     <!-- 借用 / 歸還 模式切換 -->
     <div class="mode-container">
         <button id="btn-borrow" class="mode-btn active-borrow" onclick="setMode('borrow')">📤 借用模式</button>
@@ -137,7 +163,7 @@
             resultDiv.style.color = "#0056b3";
             resultDiv.innerText = `讀取到編號：${decodedText}\n正在執行【${modeText}】程序...`;
             
-            // 發送 API 請求，明確附帶 ?id=xxx&action=borrow 或 ?id=xxx&action=return
+            // 發送 API 請求
             fetch(`${API_URL}?id=${encodeURIComponent(decodedText)}&action=${currentMode}`)
                 .then(response => response.text())
                 .then(text => {
@@ -191,8 +217,8 @@
                 cameraSelect.addEventListener('change', () => {
                     html5QrCode.stop().then(() => {
                         startCamera(cameraSelect.value);
-                    }).catch(err => {
-                        console.error("停止鏡頭失敗", err);
+                    }).catch(err => { 
+                        console.error("停止鏡頭失敗", err); 
                     });
                 });
             }
