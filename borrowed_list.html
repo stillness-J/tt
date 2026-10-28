@@ -98,6 +98,7 @@
             padding: 30px;
             color: #777;
             font-size: 16px;
+            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -121,7 +122,7 @@
     </div>
 
     <script>
-        // ★★★ 請替換成您的 GAS 網頁應用程式 URL ★★★
+        // ★★★ 請確認此處替換為您的 GAS 網址（結尾必須為 /exec） ★★★
         const API_URL = "https://script.google.com/macros/s/AKfycbx7XAEkPoYwNqnc6vMz9E6AVuaSZC3OIeh_sgUboSYGpJushqa83LhSpCAfSiqkRE_b/exec";
 
         function fetchBorrowedList() {
@@ -134,49 +135,56 @@
             listDiv.innerHTML = "";
             totalCountSpan.innerText = "...";
 
-            fetch(`${API_URL}?action=list_borrowed`)
-                .then(res => res.json())
-                .then(res => {
-                    statusDiv.style.display = "none";
-                    if (!res.success) {
-                        statusDiv.style.display = "block";
-                        statusDiv.innerText = "讀取失敗：" + (res.message || "未知錯誤");
-                        return;
-                    }
-
-                    const items = res.data || [];
-                    totalCountSpan.innerText = `${items.length} 件`;
-
-                    if (items.length === 0) {
-                        statusDiv.style.display = "block";
-                        statusDiv.innerText = "目前所有設備皆在庫，無任何出借中設備！";
-                        return;
-                    }
-
-                    items.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = "item-card";
-                        card.innerHTML = `
-                            <div class="item-title">
-                                ${item.brand ? `[${item.brand}] ` : ''}${item.name}
-                                <span class="badge">${item.status}</span>
-                            </div>
-                            <div class="item-meta">
-                                <div><strong>設備編號：</strong>${item.id}</div>
-                                <div><strong>最後操作時間：</strong>${item.updatedTime}</div>
-                            </div>
-                        `;
-                        listDiv.appendChild(card);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
+            fetch(`${API_URL}?action=list_borrowed`, {
+                method: "GET",
+                redirect: "follow"
+            })
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`伺服器回應錯誤 (狀態碼: ${res.status})`);
+                }
+                return res.json();
+            })
+            .then(res => {
+                if (!res.success) {
                     statusDiv.style.display = "block";
-                    statusDiv.innerText = "連線失敗，請檢查網路連線或 API 設定。";
+                    statusDiv.innerText = "讀取失敗：" + (res.message || "工作表設定錯誤");
+                    return;
+                }
+
+                statusDiv.style.display = "none";
+                const items = res.data || [];
+                totalCountSpan.innerText = `${items.length} 件`;
+
+                if (items.length === 0) {
+                    statusDiv.style.display = "block";
+                    statusDiv.innerText = "目前所有設備皆在庫，無任何出借中設備！";
+                    return;
+                }
+
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "item-card";
+                    card.innerHTML = `
+                        <div class="item-title">
+                            ${item.brand ? `[${item.brand}] ` : ''}${item.name}
+                            <span class="badge">${item.status}</span>
+                        </div>
+                        <div class="item-meta">
+                            <div><strong>設備編號：</strong>${item.id}</div>
+                            <div><strong>最後異動時間：</strong>${item.updatedTime}</div>
+                        </div>
+                    `;
+                    listDiv.appendChild(card);
                 });
+            })
+            .catch(err => {
+                console.error("連線錯誤詳情:", err);
+                statusDiv.style.display = "block";
+                statusDiv.innerText = "連線失敗！\n1. 請確認 GAS 部署是否發佈為「新版本」\n2. 存取權限是否設為「所有人 (Anyone)」";
+            });
         }
 
-        // 頁面載入時自動取得資料
         window.onload = fetchBorrowedList;
     </script>
 </body>
