@@ -163,24 +163,33 @@
             resultDiv.style.color = "#0056b3";
             resultDiv.innerText = `讀取到編號：${decodedText}\n正在執行【${modeText}】程序...`;
             
-            // 發送 API 請求
-            fetch(`${API_URL}?id=${encodeURIComponent(decodedText)}&action=${currentMode}`)
-                .then(response => response.text())
-                .then(text => {
-                    resultDiv.style.color = text.includes("成功") ? "green" : "red";
-                    resultDiv.innerText = text;
-                    
-                    setTimeout(() => { 
-                        isProcessing = false; 
-                        resultDiv.style.color = "#333";
-                        resultDiv.innerText = "請對準下一個 QR Code 進行掃描...";
-                    }, 3500); 
-                })
-                .catch(error => {
-                    resultDiv.style.color = "red";
-                    resultDiv.innerText = "連線失敗，請檢查網路或 API 設定！";
-                    setTimeout(() => { isProcessing = false; }, 3500);
-                });
+            // 發送 API 請求（加入 redirect: "follow" 處理 Google 轉址）
+            fetch(`${API_URL}?id=${encodeURIComponent(decodedText)}&action=${currentMode}`, {
+                method: "GET",
+                redirect: "follow"
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP 狀態碼錯誤: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(text => {
+                resultDiv.style.color = text.includes("成功") ? "green" : "red";
+                resultDiv.innerText = text;
+                
+                setTimeout(() => { 
+                    isProcessing = false; 
+                    resultDiv.style.color = "#333";
+                    resultDiv.innerText = "請對準下一個 QR Code 進行掃描...";
+                }, 3500); 
+            })
+            .catch(error => {
+                console.error("連線錯誤詳情:", error);
+                resultDiv.style.color = "red";
+                resultDiv.innerText = "連線失敗！\n請確認 GAS 權限是否設為「所有人」，或檢查網路。";
+                setTimeout(() => { isProcessing = false; }, 4000);
+            });
         }
 
         // 啟動鏡頭
