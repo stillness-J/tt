@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>已借出設備清單</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin: 0;
+            font-size: 22px;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 9px 16px;
+            background-color: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .nav-btn:hover {
+            background-color: #5a6268;
+        }
+        .btn-refresh {
+            background-color: #007bff;
+            margin-right: 8px;
+        }
+        .btn-refresh:hover {
+            background-color: #0056b3;
+        }
+        .summary-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        .list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .item-card {
+            background: white;
+            border-left: 5px solid #dc3545;
+            border-radius: 8px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .item-title {
+            font-size: 17px;
+            font-weight: bold;
+            color: #111;
+            margin-bottom: 6px;
+        }
+        .item-meta {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #ffebe6;
+            color: #dc3545;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 6px;
+        }
+        .status-msg {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>📋 已借出設備清單</h2>
+            <div>
+                <button class="nav-btn btn-refresh" onclick="fetchBorrowedList()">🔄 重新整理</button>
+                <a href="index.html" class="nav-btn">🏠 返回首頁</a>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <span>目前借出總數</span>
+            <span id="total-count" style="color: #dc3545; font-size: 20px;">載入中...</span>
+        </div>
+
+        <div id="status" class="status-msg">正在載入清單，請稍候...</div>
+        <div id="equipment-list" class="list-container"></div>
+    </div>
+
+    <script>
+        // ★★★ 請替換成您的 GAS 網頁應用程式 URL ★★★
+        const API_URL = "https://script.google.com/macros/s/AKfycbx7XAEkPoYwNqnc6vMz9E6AVuaSZC3OIeh_sgUboSYGpJushqa83LhSpCAfSiqkRE_b/exec";
+
+        function fetchBorrowedList() {
+            const statusDiv = document.getElementById('status');
+            const listDiv = document.getElementById('equipment-list');
+            const totalCountSpan = document.getElementById('total-count');
+
+            statusDiv.style.display = "block";
+            statusDiv.innerText = "正在更新設備清單...";
+            listDiv.innerHTML = "";
+            totalCountSpan.innerText = "...";
+
+            fetch(`${API_URL}?action=list_borrowed`)
+                .then(res => res.json())
+                .then(res => {
+                    statusDiv.style.display = "none";
+                    if (!res.success) {
+                        statusDiv.style.display = "block";
+                        statusDiv.innerText = "讀取失敗：" + (res.message || "未知錯誤");
+                        return;
+                    }
+
+                    const items = res.data || [];
+                    totalCountSpan.innerText = `${items.length} 件`;
+
+                    if (items.length === 0) {
+                        statusDiv.style.display = "block";
+                        statusDiv.innerText = "目前所有設備皆在庫，無任何出借中設備！";
+                        return;
+                    }
+
+                    items.forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = "item-card";
+                        card.innerHTML = `
+                            <div class="item-title">
+                                ${item.brand ? `[${item.brand}] ` : ''}${item.name}
+                                <span class="badge">${item.status}</span>
+                            </div>
+                            <div class="item-meta">
+                                <div><strong>設備編號：</strong>${item.id}</div>
+                                <div><strong>最後操作時間：</strong>${item.updatedTime}</div>
+                            </div>
+                        `;
+                        listDiv.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    console.error(err);
+                    statusDiv.style.display = "block";
+                    statusDiv.innerText = "連線失敗，請檢查網路連線或 API 設定。";
+                });
+        }
+
+        // 頁面載入時自動取得資料
+        window.onload = fetchBorrowedList;
+    </script>
+</body>
+</html>
